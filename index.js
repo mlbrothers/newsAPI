@@ -1,9 +1,7 @@
-const PORT = process.env.PORT || 8000;
-const express = require('express');
-const axios = require('axios');
-const cheerio = require('cheerio');
-const { response } = require('express');
-
+const PORT = process.env.PORT || 8000
+const express = require('express')
+const axios = require('axios')
+const cheerio = require('cheerio')
 const app = express()
 
 const newspapers = [
@@ -65,7 +63,7 @@ const newspapers = [
     // {
     //     name: 'dm',
     //     address: 'https://www.dailymail.co.uk/news/climate_change_global_warming/index.html',
-    //     base: 'https://www.dailymail.co.uk'
+    //     base: ''
     // },
     {
         name: 'nyp',
@@ -74,69 +72,73 @@ const newspapers = [
     }
 ]
 
-
 const articles = []
 
 newspapers.forEach(newspaper => {
-    axios.get(newspaper.address).then(response => {
-        const html = response.data
-        const $ = cheerio.load(html)
+    axios.get(newspaper.address)
+        .then(response => {
+            const html = response.data
+            const $ = cheerio.load(html)
 
-        $('a:contains(climate)', html).each(function () {
-            const title = $(this).text()
-            let url = $(this).attr('href')
-            if (url.startsWith("https")){
-                url = url
-            }
-            else{
-                url = newspaper.base+url
-            }
-            let cleanedStr = title.replace(/[\n\t]/g, '');
-            articles.push({
-                cleanedStr,
-                url,
-                source: newspaper.name
+            $('a:contains("climate")', html).each(function () {
+                const title = $(this).text()
+                let url = $(this).attr('href')
+                if (url.startsWith("https")){
+                    url = url
+                }
+                else{
+                    url = newspaper.base+url
+                }
+                articles.push({
+                    title,
+                    url: newspaper.base + url,
+                    source: newspaper.name
+                })
             })
+
         })
-    })
 })
 
 app.get('/', (req, res) => {
-    res.json("Welcome to my climate news API")
+    res.json('Welcome to my Climate Change News API')
 })
 
 app.get('/news', (req, res) => {
     res.json(articles)
 })
 
-app.get('/news/:newspaperId', (req, res)=>{
+app.get('/news/:newspaperId', (req, res) => {
     const newspaperId = req.params.newspaperId
-    if (newspapers.filter(newspaper => newspaper.name==newspaperId).length==0){
-        res.json("No newspaper with given ID")
+    if (newspapers.filter(newspaper => newspaper.name == newspaperId).length==0){
+        res.json("Newspaper ID wrong")
     }
-    const newspaperAddress = newspapers.filter(newspaper => newspaper.name==newspaperId)[0].address
-    const newspaperBase = newspapers.filter(newspaper => newspaper.name==newspaperId)[0].base
-    axios.get(newspaperAddress).then(response => {
-        const html = response.data
-        const $ = cheerio.load(html)
+    const newspaperAddress = newspapers.filter(newspaper => newspaper.name == newspaperId)[0].address
+    const newspaperBase = newspapers.filter(newspaper => newspaper.name == newspaperId)[0].base
 
-        const specificArticles = []
-        $('a:contains(climate)', html).each(function () {
-            const title = $(this).text()
-            let url = $(this).attr('href')
-            if (url.startsWith("https")){
-                url = url
-            }
-            else{
-                url = newspaperBase+url
-            }
-            let cleanedStr = title.replace(/[\n\t]/g, '');
-            specificArticles.push({
-                cleanedStr,
-                url            
+
+    axios.get(newspaperAddress)
+        .then(response => {
+            const html = response.data
+            const $ = cheerio.load(html)
+            const specificArticles = []
+
+            $('a:contains("climate")', html).each(function () {
+                const title = $(this).text()
+                let url = $(this).attr('href')
+                if (url.startsWith("https")){
+                    url = url
+                }
+                else{
+                    url = newspaperBase+url
+                }
+                specificArticles.push({
+                    title,
+                    url: newspaperBase + url,
+                    source: newspaperId
+                })
             })
-        })
-        res.json(specificArticles)
-    }).catch(err => console.log("Wrong news paper"))
+            res.json(specificArticles)
+        }).catch(err => console.log(err))
 })
-app.listen(PORT, () => console.log(`server running on port ${PORT}`))
+
+app.listen(PORT, () => console.log(`server running on PORT ${PORT}`))
